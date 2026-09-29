@@ -1,39 +1,57 @@
-function createPlayer() {
-    let score = 0;
-    const getScore = () => score;
-    const addScore = () => score++;
-    const resetScore = () => score = 0;
-
-    return { getScore, addScore, resetScore };
-}
-
 const gameboard = (() => {
+    let board = [];
+    let boardDom = document.querySelector(".gameboard");
+    let markedFieldsCount = 0;
 
-    board = [];
-    const newBoard = (rows=3, columns=3) => {
-        let placeholder = 1
-        for (let i = 0; i < rows; i++) {
+    // Create a 3x3 board stored in 2d array with 1-9 numbers as placeholders.
+    const newBoard = () => {
+        let placeholder = 1;
+        for (let i = 0; i < 3; i++) {
             board[i] = [];
-            for (let j = 0; j < columns; j++) {
+            for (let j = 0; j < 3; j++) {
                 board[i].push(placeholder);
                 placeholder += 1;
             }
         }
-        console.log(board);
     }
 
-    newBoard();
+    function stopRound() {
+        markedFieldsCount = 0;
+        console.log("stopRound called")
+        // disable all EventListeners
+        document.body.style.pointerEvents = 'none';
 
-    const markCell = (coords, mark) => {
-        board[coords[0]][coords[1]] = mark;
-        console.log(board);
+        /// !!!! naming to be changed !!!!
+        function listener() {
+            boardDom.removeEventListener("click", listener);
+            gameData.clearAnnText();
+            newBoard();
+            screen.updateBoard();
+            console.log("listened")
+        }
+
+        function clearBoardDisplay() {
+            document.body.style.pointerEvents = "auto";
+            boardDom.addEventListener("click", listener);
+
+        }
+
+        setTimeout(clearBoardDisplay, 10);
+
     }
 
-    const checkForWin = () => {
-        /// Array to store all possible winning combinations
+    function markCell(index1, index2, mark) {
+        board[index1][index2] = mark;
+        markedFieldsCount++;
+        console.log(markedFieldsCount)
+        checkForWin();
+    }
+
+    function checkForWin() {
+        // Array to store all possible winning combinations
         let arr = [];
 
-        // Store all horizontal & vertical combinations
+        // Push to array horizontal & vertical combinations
         for (let i = 3 - 1; i >= 0; i--) {
             arr.push([], []);
             for (let y = 3 - 1; y >= 0; y--) {
@@ -41,21 +59,133 @@ const gameboard = (() => {
                 arr[arr.length - 2].push(board[y][i]);
             }
         }
-        // Store diagonall combinations
+        // Push to array diagonall combinations
         arr.push([board[0][0], board[1][1], board[2][2]]);
         arr.push([board[2][0], board[1][1], board[0][2]]);
 
         // Check if there are any winning combinations
         for (row of arr) {
             if (row[0] === row[1] && row[0] === row[2]) {
-                console.log(`won ${row[0]}`);
-                console.log(row[0], row[1], row[2]);
-                return row[0];
+                let mark = row[0]
+                gameData.increaseScore(mark);
+                stopRound();
             }
+        }
+
+        if (markedFieldsCount === 9) {
+            gameData.increaseScore();
+            stopRound();
         }
     }
 
+    newBoard();
     return { board, newBoard, markCell, checkForWin };
 })();
 
+
+const gameData = (() => {
+    let currentPlayer = 1;
+    let startingPlayer = 1;
+    let player1Score = 0;
+    let tieCount = 0;
+    let player2Score = 0;
+    let markedFieldsCount = 0;
+
+
+    const firstScore = document.querySelector(".player1-score");
+    const tieDisplay = document.querySelector(".tie-count");
+    const secondScore = document.querySelector(".player2-score");
+    const roundResult = document.querySelector(".winner-announcement");
+
+    function displayScore() {
+        firstScore.textContent = player1Score;
+        tieDisplay.textContent = tieCount;
+        secondScore.textContent = player2Score;
+    }
+
+
+    function increaseScore(mark = null) {
+        if (mark === "X") {
+            player1Score++;
+            roundResult.textContent = "Player 1 (X) Won!";
+        } else if (mark === "O") {
+            player2Score++;
+            roundResult.textContent = "Player 2 (O) won!";
+        } else {
+            tieCount++;
+            roundResult.textContent = "It's a tie!";
+        }
+        displayScore();
+    }
+
+    function getCurrentPlayer() {
+        return currentPlayer;
+    }
+
+    function switchPlayer() {
+        currentPlayer = Math.abs(currentPlayer - 3);
+    }
+
+    function clearAnnText() {
+        roundResult.textContent = ""
+    }
+
+    function resetGame() {
+        currentPlayer = 1;
+        player1Score = 0;
+        tieCount = 0;
+        player2Score = 0;
+        gameboard.newBoard();
+    }
+
+    displayScore();
+
+    return {getCurrentPlayer, displayScore, increaseScore, switchPlayer, 
+        resetGame, clearAnnText}
+})()
+
+function connectScreen() {
+    const allCells = document.querySelectorAll(".gameboard .cell");
+    const boardArray = gameboard.board;
+
+
+    function updateBoard() {
+        cellIndex = 0
+        for (let firstIndex=0; firstIndex < 3; firstIndex++) {
+            for (let secondIndex=0; secondIndex < 3; secondIndex++) {
+                const currentCell = allCells[cellIndex];
+                cellIndex++
+                currentCell.textContent = boardArray[firstIndex][secondIndex];
+                currentCell.setAttribute("data-index-1", firstIndex);
+                currentCell.setAttribute("data-index-2", secondIndex);
+                }
+            }
+        }
+
+    function setControls() {
+        for (cell of allCells) {
+            const index1 = cell.attributes["data-index-1"].value;
+            const index2 = cell.attributes["data-index-2"].value;
+            cell.addEventListener("click", (e) => {
+                // Check if cell is already marked 
+                if (isNaN(e.srcElement.textContent)) {
+                    return;
+                } else {
+                    const mark = gameData.getCurrentPlayer() == 1 ? "X" : "O";
+                    gameboard.markCell(index1, index2, mark);
+                    updateBoard();
+                    gameData.switchPlayer();
+                }
+            })
+        }
+    }
+
+    updateBoard();
+    setControls();
+
+    return { updateBoard }
+
+}
+
+const screen = connectScreen();
 
