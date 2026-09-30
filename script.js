@@ -17,38 +17,20 @@ const gameboard = (() => {
 
     function stopRound() {
         markedFieldsCount = 0;
-        console.log("stopRound called")
-        // disable all EventListeners
-        document.body.style.pointerEvents = 'none';
-
-        /// !!!! naming to be changed !!!!
-        function listener() {
-            boardDom.removeEventListener("click", listener);
-            gameData.clearAnnText();
-            newBoard();
-            screen.updateBoard();
-            console.log("listened")
-        }
-
-        function clearBoardDisplay() {
-            document.body.style.pointerEvents = "auto";
-            boardDom.addEventListener("click", listener);
-
-        }
-
-        setTimeout(clearBoardDisplay, 10);
+        gameData.clearAnnText();
+        newBoard();
+        screen.updateBoard();
+        screen.deactivateReset();
 
     }
 
     function markCell(index1, index2, mark) {
         board[index1][index2] = mark;
         markedFieldsCount++;
-        console.log(markedFieldsCount)
         checkForWin();
     }
 
     function checkForWin() {
-        // Array to store all possible winning combinations
         let arr = [];
 
         // Push to array horizontal & vertical combinations
@@ -66,20 +48,24 @@ const gameboard = (() => {
         // Check if there are any winning combinations
         for (row of arr) {
             if (row[0] === row[1] && row[0] === row[2]) {
-                let mark = row[0]
+                let mark = row[0];
                 gameData.increaseScore(mark);
-                stopRound();
-            }
-        }
-
-        if (markedFieldsCount === 9) {
-            gameData.increaseScore();
-            stopRound();
-        }
+                screen.activateReset();
+                console.log(`${mark} won!`)
+                return;
+            } 
+            if (markedFieldsCount === 9) {
+                gameData.increaseScore();
+                screen.activateReset();
+                console.log("It's a TIE!")
+                return;
+                }
+    
+        } 
     }
 
     newBoard();
-    return { board, newBoard, markCell, checkForWin };
+    return { board, newBoard, markCell, checkForWin, stopRound };
 })();
 
 
@@ -154,7 +140,7 @@ function connectScreen() {
         for (let firstIndex=0; firstIndex < 3; firstIndex++) {
             for (let secondIndex=0; secondIndex < 3; secondIndex++) {
                 const currentCell = allCells[cellIndex];
-                cellIndex++
+                cellIndex++;
                 currentCell.textContent = boardArray[firstIndex][secondIndex];
                 currentCell.setAttribute("data-index-1", firstIndex);
                 currentCell.setAttribute("data-index-2", secondIndex);
@@ -180,10 +166,25 @@ function connectScreen() {
         }
     }
 
+    const resetOverlay = document.querySelector(".restart");
+    resetOverlay.addEventListener("click", gameboard.stopRound);
+
+    function activateReset() {
+        resetOverlay.style.display = "block";
+        console.log("reset activated");
+    }
+
+    function deactivateReset() {
+        resetOverlay.style.display = "none";
+        console.log("reset deactivated");
+    }
+
+
+
     updateBoard();
     setControls();
 
-    return { updateBoard }
+    return { updateBoard, activateReset, deactivateReset }
 
 }
 
