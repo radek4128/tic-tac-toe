@@ -41,6 +41,8 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     grid-template-rows: 1fr 1fr 1fr;
+    align-content: center;
+    justify-content: center;
     gap: 5px;
     height: 100%;
     width: 100%;
@@ -55,6 +57,10 @@ body {
     color: white;
     height: 100%;
     width: 100%;
+}
+
+.cell img {
+    height: 12vh;
 }
 
 .restart {

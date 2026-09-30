@@ -46,22 +46,21 @@ const gameboard = (() => {
         arr.push([board[2][0], board[1][1], board[0][2]]);
 
         // Check if there are any winning combinations
-        for (row of arr) {
+        for (let row of arr) {
             if (row[0] === row[1] && row[0] === row[2]) {
                 let mark = row[0];
                 gameData.increaseScore(mark);
                 screen.activateReset();
-                console.log(`${mark} won!`)
                 return;
             } 
-            if (markedFieldsCount === 9) {
-                gameData.increaseScore();
-                screen.activateReset();
-                console.log("It's a TIE!")
-                return;
-                }
-    
         } 
+
+        if (markedFieldsCount === 9) {
+            gameData.increaseScore();
+            screen.activateReset();
+            return;
+            }
+    
     }
 
     newBoard();
@@ -133,34 +132,49 @@ const gameData = (() => {
 function connectScreen() {
     const allCells = document.querySelectorAll(".gameboard .cell");
     const boardArray = gameboard.board;
-
+    const srcXmark = "x-mark.svg"
+    const srcOmark = "o-mark.svg"
 
     function updateBoard() {
         cellIndex = 0
         for (let firstIndex=0; firstIndex < 3; firstIndex++) {
             for (let secondIndex=0; secondIndex < 3; secondIndex++) {
                 const currentCell = allCells[cellIndex];
+                const mark = boardArray[firstIndex][secondIndex]
                 cellIndex++;
-                currentCell.textContent = boardArray[firstIndex][secondIndex];
+                // currentCell.textContent = boardArray[firstIndex][secondIndex];
                 currentCell.setAttribute("data-index-1", firstIndex);
                 currentCell.setAttribute("data-index-2", secondIndex);
+                currentCell.setAttribute("data-mark", mark)
+                
+                imgElem = currentCell.querySelector("img")
+                if (mark === "X") {
+                    imgElem.src = srcXmark;
+                } else if (mark === "O") {
+                    imgElem.src = srcOmark;
+                } else {
+                    imgElem.src = "";
+                }
                 }
             }
         }
 
     function setControls() {
         for (cell of allCells) {
+            // cell "data-index-n" attributes correspond with board array
+            // indexes
             const index1 = cell.attributes["data-index-1"].value;
             const index2 = cell.attributes["data-index-2"].value;
             cell.addEventListener("click", (e) => {
-                // Check if cell is already marked 
-                if (isNaN(e.srcElement.textContent)) {
-                    return;
-                } else {
-                    const mark = gameData.getCurrentPlayer() == 1 ? "X" : "O";
-                    gameboard.markCell(index1, index2, mark);
-                    updateBoard();
-                    gameData.switchPlayer();
+                let markData = e.srcElement.attributes["data-mark"]
+                if (markData) {
+                    const val = Number(markData.value);
+                    if (val >=0 && val <= 9) {
+                        const mark = gameData.getCurrentPlayer() == 1 ? "X" : "O";
+                        gameboard.markCell(index1, index2, mark);
+                        updateBoard();
+                        gameData.switchPlayer();;
+                    }
                 }
             })
         }
@@ -171,12 +185,10 @@ function connectScreen() {
 
     function activateReset() {
         resetOverlay.style.display = "block";
-        console.log("reset activated");
     }
 
     function deactivateReset() {
         resetOverlay.style.display = "none";
-        console.log("reset deactivated");
     }
 
 
